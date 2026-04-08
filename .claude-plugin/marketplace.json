@@ -1,0 +1,36 @@
+{
+  "name": "mcp-media-toolkit",
+  "owner": {
+    "name": "tadeukaiba",
+    "url": "https://github.com/tadeukaiba"
+  },
+  "metadata": {
+    "description": "MCP server for AI image generation (Gemini / Nano Banana) and upload to S3-compatible storage (Cloudflare R2, AWS S3, MinIO, etc.) with automatic prompt optimization",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "mcp-media-toolkit",
+      "source": "./",
+      "description": "Generate AI images with Google Gemini (Nano Banana) and upload to any S3-compatible storage in a single MCP tool call. Includes Claude Code skills with automatic prompt optimization.",
+      "version": "0.1.0",
+      "author": {
+        "name": "tadeukaiba",
+        "url": "https://github.com/tadeukaiba"
+      },
+      "keywords": [
+        "mcp",
+        "image-generation",
+        "image-upload",
+        "gemini",
+        "nano-banana",
+        "s3",
+        "cloudflare-r2",
+        "ai-tools",
+        "generative-ai"
+      ],
+      "category": "ai-tools",
+      "strict": false
+    }
+  ]
+}

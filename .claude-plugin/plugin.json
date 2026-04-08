@@ -2,7 +2,10 @@
   "name": "mcp-media-toolkit",
   "version": "0.1.0",
   "description": "MCP server for AI image generation (Gemini / Nano Banana) and upload to S3-compatible storage (Cloudflare R2, AWS S3, MinIO). Includes skills with automatic prompt optimization.",
-  "author": "tadeukaiba",
+  "author": {
+    "name": "tadeukaiba",
+    "url": "https://github.com/tadeukaiba"
+  },
   "homepage": "https://github.com/tadeukaiba/mcp-media-toolkit",
   "license": "MIT"
 }
