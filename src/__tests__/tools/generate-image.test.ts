@@ -6,30 +6,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const FAKE_PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgAAIAAAUAAen63NgAAAAASUVORK5CYII=";
 
-// Mock to return fake image data, then one call that throws.
-let callCount = 0;
 vi.mock("@google/genai", () => {
-  const generateContent = vi.fn(async () => {
-    callCount++;
-    if (callCount === 999) throw new Error("forced error");
-    return {
-      candidates: [
-        {
-          content: {
-            parts: [{ inlineData: { data: FAKE_PNG_BASE64, mimeType: "image/png" } }],
-          },
+  const generateContent = vi.fn(async () => ({
+    candidates: [
+      {
+        content: {
+          parts: [{ inlineData: { data: FAKE_PNG_BASE64, mimeType: "image/png" } }],
         },
-      ],
-    };
-  });
-  const generateImages = vi.fn(async () => ({
-    generatedImages: [{ image: { imageBytes: FAKE_PNG_BASE64 } }],
+      },
+    ],
   }));
   return {
     GoogleGenAI: vi.fn().mockImplementation(() => ({
-      models: { generateContent, generateImages },
+      models: { generateContent },
     })),
-    Modality: { IMAGE: "IMAGE", TEXT: "TEXT" },
   };
 });
 

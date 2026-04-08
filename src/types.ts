@@ -13,13 +13,28 @@ export type ImageFormat = (typeof IMAGE_FORMATS)[number];
 
 /**
  * Mapping from quality preset to the Gemini model used for generation.
- * - fast/balanced: Gemini Flash with image output (Nano Banana 2)
- * - quality: Imagen 3 for maximum fidelity
+ *
+ * - fast     → Nano Banana (Gemini 2.5 Flash Image) — lightest, fastest
+ * - balanced → Nano Banana 2 (Gemini 3.1 Flash Image Preview) — default, 4K capable
+ * - quality  → Nano Banana Pro (Gemini 3 Pro Image Preview) — maximum fidelity
+ *
+ * All three models are accessed via `ai.models.generateContent()` — there's no
+ * separate endpoint for image generation, just different model IDs.
  */
 export const QUALITY_MODEL_MAP: Record<QualityPreset, string> = {
-  fast: "gemini-2.0-flash-exp",
-  balanced: "gemini-2.0-flash-exp",
-  quality: "imagen-3.0-generate-002",
+  fast: "gemini-2.5-flash-image",
+  balanced: "gemini-3.1-flash-image-preview",
+  quality: "gemini-3-pro-image-preview",
+};
+
+/**
+ * Maps quality preset to a suggested image size. Higher quality = larger output.
+ * Passed to the API via config.imageConfig.imageSize.
+ */
+export const QUALITY_IMAGE_SIZE_MAP: Record<QualityPreset, string> = {
+  fast: "1K",
+  balanced: "2K",
+  quality: "4K",
 };
 
 /**

@@ -1,4 +1,4 @@
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import fs from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
@@ -8,7 +8,11 @@ import type {
   ImageFormat,
   QualityPreset,
 } from "../types.js";
-import { FORMAT_MIME_MAP, QUALITY_MODEL_MAP } from "../types.js";
+import {
+  FORMAT_MIME_MAP,
+  QUALITY_IMAGE_SIZE_MAP,
+  QUALITY_MODEL_MAP,
+} from "../types.js";
 
 export interface GenerateImageInput {
   prompt: string;
@@ -41,12 +45,12 @@ export class GeminiGenerationError extends Error {
 }
 
 /**
- * Provider wrapping the @google/genai SDK for image generation.
+ * Provider wrapping the @google/genai SDK for image generation via the
+ * Nano Banana family of Gemini models.
  *
- * Two code paths:
- * - Gemini 2.0 Flash (fast, balanced): generateContent with IMAGE modality.
- *   Aspect ratio is controlled via prompt (appended as hint).
- * - Imagen 3 (quality): generateImages with native aspect_ratio parameter.
+ * All three quality presets use `ai.models.generateContent()` with a different
+ * model ID — the API is unified. Aspect ratio and image size are passed
+ * natively via `config.imageConfig`, which all Nano Banana models support.
  */
 export class GeminiProvider {
   private readonly client: GoogleGenAI;
@@ -57,15 +61,23 @@ export class GeminiProvider {
 
   async generate(input: GenerateImageInput): Promise<GenerateImageResult> {
     const model = QUALITY_MODEL_MAP[input.quality];
+    const imageSize = QUALITY_IMAGE_SIZE_MAP[input.quality];
 
     let rawImageBase64: string;
-
     try {
-      if (input.quality === "quality") {
-        rawImageBase64 = await this.generateWithImagen(model, input);
-      } else {
-        rawImageBase64 = await this.generateWithFlash(model, input);
-      }
+      const response = await this.client.models.generateContent({
+        model,
+        contents: input.prompt,
+        config: {
+          responseModalities: ["TEXT", "IMAGE"],
+          imageConfig: {
+            aspectRatio: input.aspectRatio,
+            imageSize,
+          },
+        },
+      });
+
+      rawImageBase64 = this.extractImageFromResponse(response, model);
     } catch (error) {
       if (error instanceof GeminiGenerationError) throw error;
       throw new GeminiGenerationError(
@@ -74,7 +86,6 @@ export class GeminiProvider {
       );
     }
 
-    // Convert/save to the requested format and build a thumbnail.
     const { filePath, thumbnailBase64 } = await this.saveAndThumbnail(
       rawImageBase64,
       input.format,
@@ -89,28 +100,17 @@ export class GeminiProvider {
     };
   }
 
-  private async generateWithFlash(
-    model: string,
-    input: GenerateImageInput,
-  ): Promise<string> {
-    // Gemini Flash image generation doesn't have a first-class aspect_ratio
-    // param — we pass it as a strong hint in the prompt.
-    const promptWithAspect =
-      input.aspectRatio === "1:1"
-        ? input.prompt
-        : `${input.prompt}\n\nAspect ratio: ${input.aspectRatio}`;
+  private extractImageFromResponse(response: unknown, model: string): string {
+    // The SDK returns a response with candidates[].content.parts[].inlineData.
+    // We walk the first candidate's parts and grab the first inline image.
+    const candidates = (response as { candidates?: unknown[] }).candidates;
+    const parts =
+      (candidates?.[0] as { content?: { parts?: unknown[] } })?.content?.parts ??
+      [];
 
-    const response = await this.client.models.generateContent({
-      model,
-      contents: promptWithAspect,
-      config: {
-        responseModalities: [Modality.IMAGE, Modality.TEXT],
-      },
-    });
-
-    const parts = response.candidates?.[0]?.content?.parts ?? [];
     for (const part of parts) {
-      const inlineData = part.inlineData;
+      const inlineData = (part as { inlineData?: { data?: string } })
+        .inlineData;
       if (inlineData?.data) {
         return inlineData.data;
       }
@@ -119,28 +119,6 @@ export class GeminiProvider {
     throw new GeminiGenerationError(
       `Gemini (${model}) returned no image data. The model may have refused the prompt — try rephrasing or check content policies.`,
     );
-  }
-
-  private async generateWithImagen(
-    model: string,
-    input: GenerateImageInput,
-  ): Promise<string> {
-    const response = await this.client.models.generateImages({
-      model,
-      prompt: input.prompt,
-      config: {
-        numberOfImages: 1,
-        aspectRatio: input.aspectRatio,
-      },
-    });
-
-    const imageBytes = response.generatedImages?.[0]?.image?.imageBytes;
-    if (!imageBytes) {
-      throw new GeminiGenerationError(
-        `Imagen (${model}) returned no image data. The model may have refused the prompt — try rephrasing or check content policies.`,
-      );
-    }
-    return imageBytes;
   }
 
   private async saveAndThumbnail(

@@ -18,12 +18,8 @@ vi.mock("@google/genai", () => ({
           },
         ],
       })),
-      generateImages: vi.fn(async () => ({
-        generatedImages: [{ image: { imageBytes: FAKE_PNG_BASE64 } }],
-      })),
     },
   })),
-  Modality: { IMAGE: "IMAGE", TEXT: "TEXT" },
 }));
 
 const sendMock = vi.fn();

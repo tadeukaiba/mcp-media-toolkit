@@ -3,16 +3,18 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// 1x1 transparent PNG as base64 — used as fake output from both code paths.
+// 1x1 transparent PNG as base64 — used as fake output for the mocked SDK.
 const FAKE_PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgAAIAAAUAAen63NgAAAAASUVORK5CYII=";
 
-// Mock @google/genai so tests are offline and deterministic.
+// Track calls so tests can assert what was sent to the SDK.
+const generateContentCalls: Array<{ model: string; config?: unknown }> = [];
+
+// Mock @google/genai so tests are offline and deterministic. All three quality
+// presets now go through ai.models.generateContent() with different model IDs.
 vi.mock("@google/genai", () => {
-  const generateContent = vi.fn(async (args: { model: string }) => {
-    if (args.model.includes("bad-model")) {
-      throw new Error("API error");
-    }
+  const generateContent = vi.fn(async (args: { model: string; config?: unknown }) => {
+    generateContentCalls.push({ model: args.model, config: args.config });
     return {
       candidates: [
         {
@@ -28,15 +30,10 @@ vi.mock("@google/genai", () => {
     };
   });
 
-  const generateImages = vi.fn(async () => ({
-    generatedImages: [{ image: { imageBytes: FAKE_PNG_BASE64 } }],
-  }));
-
   return {
     GoogleGenAI: vi.fn().mockImplementation(() => ({
-      models: { generateContent, generateImages },
+      models: { generateContent },
     })),
-    Modality: { IMAGE: "IMAGE", TEXT: "TEXT" },
   };
 });
 
@@ -47,13 +44,14 @@ describe("GeminiProvider", () => {
 
   beforeEach(async () => {
     tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "gemini-test-"));
+    generateContentCalls.length = 0;
   });
 
   afterEach(async () => {
     await fs.rm(tmpDir, { recursive: true, force: true });
   });
 
-  it("generates an image with the fast preset (Gemini Flash)", async () => {
+  it("uses the Nano Banana (flash image) model for the fast preset", async () => {
     const provider = new GeminiProvider({ apiKey: "test" });
     const result = await provider.generate({
       prompt: "a cat",
@@ -62,16 +60,23 @@ describe("GeminiProvider", () => {
       format: "png",
       outputDir: tmpDir,
     });
-    expect(result.filePath).toMatch(/\.png$/);
-    expect(result.thumbnailBase64).toBeTruthy();
-    expect(result.modelUsed).toContain("flash");
-
-    // File actually written to disk
-    const stat = await fs.stat(result.filePath);
-    expect(stat.isFile()).toBe(true);
+    expect(result.modelUsed).toBe("gemini-2.5-flash-image");
+    expect(generateContentCalls[0].model).toBe("gemini-2.5-flash-image");
   });
 
-  it("generates an image with the quality preset (Imagen 3)", async () => {
+  it("uses Nano Banana 2 for the balanced preset", async () => {
+    const provider = new GeminiProvider({ apiKey: "test" });
+    const result = await provider.generate({
+      prompt: "a cat",
+      quality: "balanced",
+      aspectRatio: "1:1",
+      format: "png",
+      outputDir: tmpDir,
+    });
+    expect(result.modelUsed).toBe("gemini-3.1-flash-image-preview");
+  });
+
+  it("uses Nano Banana Pro for the quality preset", async () => {
     const provider = new GeminiProvider({ apiKey: "test" });
     const result = await provider.generate({
       prompt: "a cat",
@@ -80,8 +85,50 @@ describe("GeminiProvider", () => {
       format: "webp",
       outputDir: tmpDir,
     });
+    expect(result.modelUsed).toBe("gemini-3-pro-image-preview");
     expect(result.filePath).toMatch(/\.webp$/);
-    expect(result.modelUsed).toContain("imagen");
+  });
+
+  it("passes aspectRatio and imageSize via config.imageConfig", async () => {
+    const provider = new GeminiProvider({ apiKey: "test" });
+    await provider.generate({
+      prompt: "a cat",
+      quality: "balanced",
+      aspectRatio: "16:9",
+      format: "png",
+      outputDir: tmpDir,
+    });
+    const cfg = generateContentCalls[0].config as {
+      imageConfig?: { aspectRatio?: string; imageSize?: string };
+      responseModalities?: string[];
+    };
+    expect(cfg.imageConfig?.aspectRatio).toBe("16:9");
+    expect(cfg.imageConfig?.imageSize).toBe("2K");
+    expect(cfg.responseModalities).toEqual(["TEXT", "IMAGE"]);
+  });
+
+  it("uses 4K imageSize for quality preset and 1K for fast", async () => {
+    const provider = new GeminiProvider({ apiKey: "test" });
+    await provider.generate({
+      prompt: "a cat",
+      quality: "quality",
+      aspectRatio: "1:1",
+      format: "png",
+      outputDir: tmpDir,
+    });
+    await provider.generate({
+      prompt: "a cat",
+      quality: "fast",
+      aspectRatio: "1:1",
+      format: "png",
+      outputDir: tmpDir,
+    });
+    expect(
+      (generateContentCalls[0].config as { imageConfig: { imageSize: string } }).imageConfig.imageSize,
+    ).toBe("4K");
+    expect(
+      (generateContentCalls[1].config as { imageConfig: { imageSize: string } }).imageConfig.imageSize,
+    ).toBe("1K");
   });
 
   it("writes jpeg when format is jpeg", async () => {
@@ -107,5 +154,7 @@ describe("GeminiProvider", () => {
       outputDir: nested,
     });
     expect(result.filePath.startsWith(nested)).toBe(true);
+    const stat = await fs.stat(result.filePath);
+    expect(stat.isFile()).toBe(true);
   });
 });
