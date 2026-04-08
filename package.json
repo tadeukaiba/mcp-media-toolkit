@@ -1,6 +1,6 @@
 {
   "name": "mcp-media-toolkit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for AI image generation (Gemini / Nano Banana) and upload to S3-compatible storage (Cloudflare R2, AWS S3, MinIO). Works with Claude Code, Cursor, Codex, and any MCP client.",
   "type": "module",
   "main": "dist/index.js",
@@ -9,7 +9,7 @@
   },
   "files": [
     "dist",
-    ".claude/skills",
+    "skills",
     ".claude-plugin",
     ".mcp.json",
     ".env.example",
