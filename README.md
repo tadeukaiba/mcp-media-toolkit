@@ -2,6 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/mcp-media-toolkit.svg)](https://www.npmjs.com/package/mcp-media-toolkit)
 [![downloads](https://img.shields.io/npm/dm/mcp-media-toolkit.svg)](https://www.npmjs.com/package/mcp-media-toolkit)
+[![CI](https://github.com/tadeukaiba/mcp-media-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/tadeukaiba/mcp-media-toolkit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Generate AI images with Google Gemini (Nano Banana) and upload them to any S3-compatible storage — in a single MCP tool call.**
