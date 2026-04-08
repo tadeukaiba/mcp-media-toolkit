@@ -9,7 +9,7 @@
   },
   "files": [
     "dist",
-    ".claude",
+    ".claude/skills",
     ".claude-plugin",
     ".mcp.json",
     ".env.example",

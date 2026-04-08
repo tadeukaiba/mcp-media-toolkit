@@ -1,7 +1,7 @@
 {
   "mcp-media-toolkit": {
-    "command": "node",
-    "args": ["${CLAUDE_PLUGIN_ROOT}/dist/index.js"],
+    "command": "npx",
+    "args": ["-y", "mcp-media-toolkit"],
     "env": {
       "GEMINI_API_KEY": "${GEMINI_API_KEY}",
       "S3_ENDPOINT": "${S3_ENDPOINT}",
