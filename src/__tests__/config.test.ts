@@ -92,4 +92,46 @@ describe("loadConfig", () => {
     });
     expect(cfg.imageOutputDir).toBe("/tmp/custom-output");
   });
+
+  // Regression: Claude Code may pass a plugin's .mcp.json env block through
+  // without interpolating ${VAR} references when the parent shell does not
+  // export them. We must treat those literals as unset instead of accepting
+  // them as real values.
+  describe("unresolved ${VAR} placeholders", () => {
+    it("treats IMAGE_OUTPUT_DIR='${IMAGE_OUTPUT_DIR}' as unset (falls back to default)", () => {
+      const cfg = loadConfig({
+        GEMINI_API_KEY: "g-key",
+        IMAGE_OUTPUT_DIR: "${IMAGE_OUTPUT_DIR}",
+      });
+      expect(cfg.imageOutputDir).toContain("mcp-media");
+      expect(cfg.imageOutputDir).not.toContain("${");
+    });
+
+    it("treats S3_REGION='${S3_REGION}' as unset (falls back to 'auto')", () => {
+      const cfg = loadConfig({
+        GEMINI_API_KEY: "g-key",
+        ...validS3,
+        S3_REGION: "${S3_REGION}",
+      });
+      expect(cfg.s3?.region).toBe("auto");
+    });
+
+    it("treats GEMINI_API_KEY='${GEMINI_API_KEY}' as unset (throws)", () => {
+      expect(() => loadConfig({ GEMINI_API_KEY: "${GEMINI_API_KEY}" })).toThrow(
+        /GEMINI_API_KEY is required/,
+      );
+    });
+
+    it("treats ALL S3_* as unset when all are placeholders (no S3 config)", () => {
+      const cfg = loadConfig({
+        GEMINI_API_KEY: "g-key",
+        S3_ENDPOINT: "${S3_ENDPOINT}",
+        S3_ACCESS_KEY_ID: "${S3_ACCESS_KEY_ID}",
+        S3_SECRET_ACCESS_KEY: "${S3_SECRET_ACCESS_KEY}",
+        S3_BUCKET: "${S3_BUCKET}",
+        S3_PUBLIC_URL: "${S3_PUBLIC_URL}",
+      });
+      expect(cfg.s3).toBeNull();
+    });
+  });
 });

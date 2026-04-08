@@ -26,6 +26,25 @@ function stripTrailingSlash(value: string): string {
 }
 
 /**
+ * Reads an env var while filtering out unresolved `${VAR}` placeholders.
+ *
+ * Some MCP clients (including Claude Code) pass through `${VAR}` literals
+ * from a plugin's .mcp.json env block when the referenced variable is not
+ * set in the parent process. If we accept those literals as values, we get
+ * very confusing bugs — e.g. a file written to
+ * `<cwd>/${IMAGE_OUTPUT_DIR}/gemini-xxx.png`. Treating placeholders as unset
+ * gives the rest of the config loader a chance to fall back to sensible
+ * defaults.
+ */
+function readEnv(env: NodeJS.ProcessEnv, name: string): string | undefined {
+  const raw = env[name]?.trim();
+  if (!raw) return undefined;
+  // Matches "${FOO}" or "${FOO_BAR}" — unresolved shell-style placeholders.
+  if (/^\$\{[A-Z_][A-Z0-9_]*\}$/i.test(raw)) return undefined;
+  return raw;
+}
+
+/**
  * Loads configuration from environment variables.
  *
  * Fail-fast strategy: every validation error includes the variable name,
@@ -37,7 +56,7 @@ function stripTrailingSlash(value: string): string {
  */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   // --- Gemini (required) --------------------------------------------------
-  const geminiApiKey = env.GEMINI_API_KEY?.trim();
+  const geminiApiKey = readEnv(env, "GEMINI_API_KEY");
   if (!geminiApiKey) {
     throw new ConfigError(
       "GEMINI_API_KEY is required. Get your free key at https://aistudio.google.com/apikey and set it as an environment variable.",
@@ -46,15 +65,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
   // --- Image output directory (optional) ---------------------------------
   const imageOutputDir =
-    env.IMAGE_OUTPUT_DIR?.trim() || path.join(os.homedir(), "Pictures", "mcp-media");
+    readEnv(env, "IMAGE_OUTPUT_DIR") ??
+    path.join(os.homedir(), "Pictures", "mcp-media");
 
   // --- S3 (optional, but all-or-nothing) ---------------------------------
   const s3Vars = {
-    S3_ENDPOINT: env.S3_ENDPOINT?.trim(),
-    S3_ACCESS_KEY_ID: env.S3_ACCESS_KEY_ID?.trim(),
-    S3_SECRET_ACCESS_KEY: env.S3_SECRET_ACCESS_KEY?.trim(),
-    S3_BUCKET: env.S3_BUCKET?.trim(),
-    S3_PUBLIC_URL: env.S3_PUBLIC_URL?.trim(),
+    S3_ENDPOINT: readEnv(env, "S3_ENDPOINT"),
+    S3_ACCESS_KEY_ID: readEnv(env, "S3_ACCESS_KEY_ID"),
+    S3_SECRET_ACCESS_KEY: readEnv(env, "S3_SECRET_ACCESS_KEY"),
+    S3_BUCKET: readEnv(env, "S3_BUCKET"),
+    S3_PUBLIC_URL: readEnv(env, "S3_PUBLIC_URL"),
   };
 
   const s3VarsSet = Object.entries(s3Vars).filter(([, v]) => Boolean(v));
@@ -90,7 +110,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       secretAccessKey: s3Vars.S3_SECRET_ACCESS_KEY!,
       bucket: s3Vars.S3_BUCKET!,
       publicUrl: stripTrailingSlash(s3Vars.S3_PUBLIC_URL!),
-      region: env.S3_REGION?.trim() || "auto",
+      region: readEnv(env, "S3_REGION") ?? "auto",
     };
   }
 
