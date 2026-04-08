@@ -10,7 +10,7 @@ A batteries-included MCP (Model Context Protocol) server that works in any MCP c
 
 ## Features
 
-- **Image generation** — Gemini 2.0 Flash (Nano Banana) and Imagen 3 via a single tool.
+- **Image generation** — full Nano Banana family: `gemini-2.5-flash-image` (fast, 1K), `gemini-3.1-flash-image-preview` (Nano Banana 2, 2K), and `gemini-3-pro-image-preview` (Nano Banana Pro, 4K).
 - **S3-compatible upload** — works with Cloudflare R2, AWS S3, MinIO, DigitalOcean Spaces, and any other S3-protocol service.
 - **One-shot workflow** — a dedicated `generate_and_upload` tool goes from prompt to public URL in a single call.
 - **Automatic prompt optimization** — the Claude Code skills rewrite casual descriptions into rich, detailed prompts so short requests still produce great images.
@@ -168,7 +168,7 @@ Generate an AI image with Gemini and save it to disk.
 | Name | Type | Default | Description |
 |---|---|---|---|
 | `prompt` | string (required) | — | Description of the image. |
-| `quality` | `fast` \| `balanced` \| `quality` | `balanced` | `fast`/`balanced` use Gemini Flash (Nano Banana). `quality` uses Imagen 3. |
+| `quality` | `fast` \| `balanced` \| `quality` | `fast` | `fast` → Nano Banana (1K). `balanced` → Nano Banana 2 (2K). `quality` → Nano Banana Pro (4K, much slower). |
 | `aspect_ratio` | `1:1` \| `16:9` \| `9:16` \| `4:3` \| `3:4` | `1:1` | Aspect ratio. |
 | `format` | `png` \| `jpeg` \| `webp` | `png` | Output format. |
 | `output_dir` | string | `~/Pictures/mcp-media/` | Directory to save the image. |

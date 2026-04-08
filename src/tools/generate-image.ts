@@ -12,9 +12,9 @@ export const generateImageInputSchema = {
     ),
   quality: z
     .enum(QUALITY_PRESETS)
-    .default("balanced")
+    .default("fast")
     .describe(
-      "Quality preset. 'fast' and 'balanced' use Gemini Flash (Nano Banana). 'quality' uses Imagen 3 for maximum fidelity.",
+      "Quality preset. Default is 'fast' (Nano Banana, 1K) which is cheap and quick. 'balanced' uses Nano Banana 2 at 2K. 'quality' uses Nano Banana Pro at 4K for maximum fidelity (much slower).",
     ),
   aspect_ratio: z
     .enum(ASPECT_RATIOS)
@@ -75,7 +75,7 @@ export async function handleGenerateImage(
   args: GenerateImageArgs,
   config: AppConfig,
 ): Promise<ToolResult> {
-  const quality = args.quality ?? "balanced";
+  const quality = args.quality ?? "fast";
   const aspect_ratio = args.aspect_ratio ?? "1:1";
   const format = args.format ?? "png";
   const outputDir = args.output_dir ?? config.imageOutputDir;

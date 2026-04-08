@@ -45,6 +45,41 @@ export class GeminiGenerationError extends Error {
 }
 
 /**
+ * Builds a filesystem-safe slug from the first meaningful words of a prompt.
+ *
+ * The goal is to make generated files recognizable at a glance without
+ * opening them — "gemini-1775659536817-minimalist-modern-logo.png" is much
+ * more useful than "gemini-1775659536817.png" when scrolling a folder.
+ *
+ * Keeps the slug short (max 40 chars) so we don't bump into filesystem
+ * path limits, drops common English filler at the start so the slug leads
+ * with the actual subject, and returns an empty string for prompts that
+ * have no alphanumeric content (caller falls back to timestamp-only name).
+ */
+export function slugifyPrompt(prompt: string): string {
+  const FILLER = new Set([
+    "a", "an", "the", "of", "with", "and", "or", "on", "in", "at", "to",
+    "for", "by", "from", "is", "are", "this", "that", "it",
+  ]);
+
+  // Normalize: lowercase, split on any non-alphanumeric run.
+  const words = prompt
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+
+  // Strip leading filler words so the slug starts with something meaningful.
+  let start = 0;
+  while (start < words.length && FILLER.has(words[start])) start++;
+
+  const meaningful = words.slice(start, start + 6);
+  const slug = meaningful.join("-");
+
+  // Hard cap on length so we never blow past filesystem limits.
+  return slug.slice(0, 40).replace(/-+$/, "");
+}
+
+/**
  * Provider wrapping the @google/genai SDK for image generation via the
  * Nano Banana family of Gemini models.
  *
@@ -90,6 +125,7 @@ export class GeminiProvider {
       rawImageBase64,
       input.format,
       input.outputDir,
+      slugifyPrompt(input.prompt),
     );
 
     return {
@@ -125,11 +161,14 @@ export class GeminiProvider {
     base64Data: string,
     format: ImageFormat,
     outputDir: string,
+    slug: string,
   ): Promise<{ filePath: string; thumbnailBase64: string }> {
     await fs.mkdir(outputDir, { recursive: true });
 
     const timestamp = Date.now();
-    const filename = `gemini-${timestamp}.${format}`;
+    const filename = slug
+      ? `gemini-${timestamp}-${slug}.${format}`
+      : `gemini-${timestamp}.${format}`;
     const filePath = path.join(outputDir, filename);
 
     const rawBuffer = Buffer.from(base64Data, "base64");

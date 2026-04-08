@@ -37,7 +37,44 @@ vi.mock("@google/genai", () => {
   };
 });
 
-import { GeminiProvider } from "../../providers/gemini.js";
+import { GeminiProvider, slugifyPrompt } from "../../providers/gemini.js";
+
+describe("slugifyPrompt", () => {
+  it("lowercases and joins with dashes", () => {
+    expect(slugifyPrompt("Orange Tabby Cat")).toBe("orange-tabby-cat");
+  });
+
+  it("strips leading filler words so the slug starts meaningful", () => {
+    expect(slugifyPrompt("A fluffy orange tabby cat curled up on top of a book")).toBe(
+      "fluffy-orange-tabby-cat-curled-up",
+    );
+  });
+
+  it("keeps at most 6 words after the leading-filler strip", () => {
+    // "a" in the middle is kept — only leading filler is stripped, because
+    // removing filler mid-string would risk dropping meaningful words in
+    // edge cases. The word cap then takes the next 6.
+    expect(
+      slugifyPrompt("minimalist modern logo for a developer tool called pulse"),
+    ).toBe("minimalist-modern-logo-for-a-developer");
+  });
+
+  it("handles punctuation and multiple spaces", () => {
+    expect(slugifyPrompt('A "red" fox, curled up!')).toBe("red-fox-curled-up");
+  });
+
+  it("returns empty string when no alphanumeric content", () => {
+    expect(slugifyPrompt("!!!")).toBe("");
+    expect(slugifyPrompt("   ")).toBe("");
+  });
+
+  it("caps total length at 40 chars", () => {
+    const longPrompt = "supercalifragilisticexpialidocious wonderful magical extraordinary";
+    const slug = slugifyPrompt(longPrompt);
+    expect(slug.length).toBeLessThanOrEqual(40);
+    expect(slug).not.toMatch(/-$/); // no trailing dash after the cut
+  });
+});
 
 describe("GeminiProvider", () => {
   let tmpDir: string;
@@ -156,5 +193,32 @@ describe("GeminiProvider", () => {
     expect(result.filePath.startsWith(nested)).toBe(true);
     const stat = await fs.stat(result.filePath);
     expect(stat.isFile()).toBe(true);
+  });
+
+  it("includes a prompt slug in the generated filename", async () => {
+    const provider = new GeminiProvider({ apiKey: "test" });
+    const result = await provider.generate({
+      prompt: "A minimalist modern logo for Pulse",
+      quality: "fast",
+      aspectRatio: "1:1",
+      format: "png",
+      outputDir: tmpDir,
+    });
+    // Filename shape: gemini-<timestamp>-<slug>.<ext>
+    expect(result.filePath).toMatch(
+      /gemini-\d+-minimalist-modern-logo-for-pulse\.png$/,
+    );
+  });
+
+  it("falls back to timestamp-only name when slug would be empty", async () => {
+    const provider = new GeminiProvider({ apiKey: "test" });
+    const result = await provider.generate({
+      prompt: "!!!",
+      quality: "fast",
+      aspectRatio: "1:1",
+      format: "png",
+      outputDir: tmpDir,
+    });
+    expect(result.filePath).toMatch(/gemini-\d+\.png$/);
   });
 });

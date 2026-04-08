@@ -54,11 +54,11 @@ describe("handleGenerateImage", () => {
     expect(result.content[1].type).toBe("image");
   });
 
-  it("applies default quality/aspect_ratio/format when not provided", async () => {
+  it("applies default quality=fast, aspect_ratio=1:1, format=png when not provided", async () => {
     const result = await handleGenerateImage({ prompt: "a cat" }, makeConfig());
     expect(result.isError).toBeFalsy();
     const text = (result.content[0] as { text: string }).text;
-    expect(text).toContain("balanced");
+    expect(text).toContain("fast");
     expect(text).toContain("1:1");
     expect(text).toContain("png");
   });

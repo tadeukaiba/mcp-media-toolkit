@@ -14,9 +14,9 @@ export type ImageFormat = (typeof IMAGE_FORMATS)[number];
 /**
  * Mapping from quality preset to the Gemini model used for generation.
  *
- * - fast     → Nano Banana (Gemini 2.5 Flash Image) — lightest, fastest
- * - balanced → Nano Banana 2 (Gemini 3.1 Flash Image Preview) — default, 4K capable
- * - quality  → Nano Banana Pro (Gemini 3 Pro Image Preview) — maximum fidelity
+ * - fast     → Nano Banana (Gemini 2.5 Flash Image) — default, cheap and quick
+ * - balanced → Nano Banana 2 (Gemini 3.1 Flash Image Preview) — 2K, richer detail
+ * - quality  → Nano Banana Pro (Gemini 3 Pro Image Preview) — 4K, maximum fidelity but slow
  *
  * All three models are accessed via `ai.models.generateContent()` — there's no
  * separate endpoint for image generation, just different model IDs.

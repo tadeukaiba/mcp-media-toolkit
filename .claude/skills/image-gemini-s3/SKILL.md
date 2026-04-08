@@ -21,7 +21,7 @@ When in doubt, default to this skill. Adding an upload takes almost no extra tim
 2. **Optimize the prompt.** Rewrite the user's description into a detailed image prompt. See the Prompt Optimization section below — it's the same approach as `/generate-image-gemini`, and it's the main reason this skill produces better results than calling the raw tool.
 
 3. **Pick defaults.**
-   - `quality`: `balanced` unless the user needs photorealistic/maximum fidelity (then `quality`)
+   - `quality`: **`fast`** (Nano Banana, 1K) — this is the right default. It's cheap and quick, and most image requests don't need more. Move up to `balanced` only when the user signals they care about quality ("for my landing page", "this needs to look polished"). Use `quality` only when the user explicitly asks for photorealistic/print-quality work — warn them it takes several minutes.
    - `aspect_ratio`: match the use case — `1:1` for avatars/icons, `16:9` for landing pages/banners, `9:16` for portraits/stories, `4:3` for photos, `3:4` for posters
    - `format`: `png` default, `webp` if the user mentioned web performance, `jpeg` only for large photographic content
 
@@ -56,12 +56,12 @@ Keep the result to 1-3 dense sentences. Model responds better to information den
 **Example 1**
 - User: "I need an image of a sunset for my blog"
 - Optimized: "A wide landscape shot of a dramatic sunset over rolling hills, warm golden and orange hues blending into deep violet sky, silhouetted trees on the horizon, soft atmospheric haze, cinematic color grading, photorealistic, high detail, 16:9."
-- Call: `quality: balanced`, `aspect_ratio: 16:9`, `format: png`
+- Call: `quality: balanced`, `aspect_ratio: 16:9`, `format: png` (bumped to balanced because "for my blog" signals quality matters)
 
 **Example 2**
 - User: "generate a profile picture for a dev tool called 'Pulse'"
 - Optimized: "A minimalist modern logo for a developer tool named 'Pulse', a stylized heartbeat waveform forming the letter P, flat vector design, electric blue on white background, clean geometric lines, centered composition, professional tech branding."
-- Call: `quality: balanced`, `aspect_ratio: 1:1`, `format: png`
+- Call: `quality: fast`, `aspect_ratio: 1:1`, `format: png` (fast is fine for exploratory logo drafts)
 
 **Example 3 — user was already specific**
 - User: "a watercolor illustration of a red fox curled up in autumn leaves, soft morning light"

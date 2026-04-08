@@ -14,8 +14,10 @@ export const generateAndUploadInputSchema = {
     .describe("The description of the image to generate."),
   quality: z
     .enum(QUALITY_PRESETS)
-    .default("balanced")
-    .describe("Quality preset: fast, balanced, or quality (Imagen 3)."),
+    .default("fast")
+    .describe(
+      "Quality preset. Default is 'fast' (Nano Banana, 1K) which is cheap and quick. Use 'balanced' (Nano Banana 2, 2K) when quality matters more than speed, and 'quality' (Nano Banana Pro, 4K) for maximum fidelity — much slower.",
+    ),
   aspect_ratio: z
     .enum(ASPECT_RATIOS)
     .default("1:1")
@@ -67,7 +69,7 @@ export async function handleGenerateAndUpload(
     };
   }
 
-  const quality = args.quality ?? "balanced";
+  const quality = args.quality ?? "fast";
   const aspect_ratio = args.aspect_ratio ?? "1:1";
   const format = args.format ?? "png";
   const outputDir = args.output_dir ?? config.imageOutputDir;

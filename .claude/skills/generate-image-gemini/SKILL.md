@@ -14,11 +14,11 @@ Generate an AI image using the `generate_image_gemini` MCP tool. Before calling 
 2. **Optimize the prompt.** Rewrite the user's description into a detailed image prompt following the structure below. Do this silently — don't show the user a wall of technical prompt engineering unless they ask.
 
 3. **Choose sensible defaults.** Unless the user specified otherwise:
-   - `quality`: `balanced` (good tradeoff of speed and fidelity)
+   - `quality`: `fast` (Nano Banana, ~1K output) — cheap and quick, good enough for most requests. Only move up when the user signals they care about fidelity.
    - `aspect_ratio`: `1:1` for icons/avatars/logos, `16:9` for landscapes/banners, `9:16` for portraits/phone wallpapers, `4:3` for photos
    - `format`: `png` (lossless, safest default)
 
-4. **Call the tool.** Use `mcp__mcp-media-toolkit__generate_image_gemini` with the optimized prompt. Use `quality: "quality"` only when the user explicitly asks for maximum fidelity or for photorealistic work — it's slower and uses Imagen 3.
+4. **Call the tool.** Use `mcp__mcp-media-toolkit__generate_image_gemini` with the optimized prompt. Only bump `quality` above `fast` when the user explicitly asks for higher fidelity, mentions production use, or asks for photorealistic/print-quality work — higher presets are much slower.
 
 5. **Show the result.** The tool returns a thumbnail preview and the local file path. Report both to the user, plus confirm what aspect ratio and quality preset were used.
 
@@ -62,9 +62,9 @@ If the user gives a very specific prompt already ("photorealistic portrait of a 
 
 ## Quality Presets
 
-- **fast** — Gemini 2.0 Flash, quickest iteration. Use for drafts, sketches, exploratory ideas.
-- **balanced** — Gemini 2.0 Flash with a higher-quality prompt. Default for most work.
-- **quality** — Imagen 3. Use when the user needs photorealistic output, print-quality assets, or explicitly asks for maximum fidelity. Slower and potentially hits stricter content filters.
+- **fast** (default) — Nano Banana (`gemini-2.5-flash-image`) at 1K. Cheap, quick, good enough for most drafts, sketches, and casual requests. Start here unless the user signals otherwise.
+- **balanced** — Nano Banana 2 (`gemini-3.1-flash-image-preview`) at 2K. Better detail, slower. Use when the user cares about quality — "this is for a blog post", "for my landing page", etc.
+- **quality** — Nano Banana Pro (`gemini-3-pro-image-preview`) at 4K. Maximum fidelity but significantly slower (can take several minutes). Reserve for when the user explicitly asks for photorealistic output, print-quality assets, or mentions maximum quality. Warn them about the wait.
 
 ## Errors
 
