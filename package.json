@@ -1,0 +1,69 @@
+{
+  "name": "mcp-media-toolkit",
+  "version": "0.1.0",
+  "description": "MCP server for AI image generation (Gemini / Nano Banana) and upload to S3-compatible storage (Cloudflare R2, AWS S3, MinIO). Works with Claude Code, Cursor, Codex, and any MCP client.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "mcp-media-toolkit": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    ".claude",
+    ".claude-plugin",
+    ".mcp.json",
+    ".env.example",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "claude-code",
+    "cursor",
+    "codex",
+    "gemini",
+    "nano-banana",
+    "image-generation",
+    "image-upload",
+    "s3",
+    "cloudflare-r2",
+    "ai-tools",
+    "generative-ai",
+    "prompt-optimization"
+  ],
+  "author": "tadeukaiba",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tadeukaiba/mcp-media-toolkit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tadeukaiba/mcp-media-toolkit/issues"
+  },
+  "homepage": "https://github.com/tadeukaiba/mcp-media-toolkit#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@google/genai": "^1.48.0",
+    "@aws-sdk/client-s3": "^3.1026.0",
+    "zod": "^4.3.6",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
